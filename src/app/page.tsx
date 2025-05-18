@@ -23,16 +23,20 @@ const formSchema = z.object({
   jobDescription: z.string().min(50, { message: "Job description must be at least 50 characters." }).max(15000, {message: "Job description must be at most 15000 characters."}),
   userProfilePdf: z.any().optional() 
     .refine(files => {
-      if (!files || typeof FileList === 'undefined' || !(files instanceof FileList) || files.length === 0) return true;
+      // Check if FileList is defined (browser environment) before using it
+      if (typeof FileList === 'undefined' || !files || !(files instanceof FileList) || files.length === 0) return true;
       return files[0].size <= MAX_FILE_SIZE_BYTES;
     }, `Max file size is ${MAX_FILE_SIZE_MB}MB.`)
     .refine(files => {
-      if (!files || typeof FileList === 'undefined' || !(files instanceof FileList) || files.length === 0) return true;
+      // Check if FileList is defined (browser environment) before using it
+      if (typeof FileList === 'undefined' || !files || !(files instanceof FileList) || files.length === 0) return true;
       return files[0].type === "application/pdf";
     }, "Only PDF files are allowed."),
 }).superRefine((data, ctx) => {
-  const pdfFileProvided = data.userProfilePdf && 
-                          (typeof FileList !== 'undefined' && data.userProfilePdf instanceof FileList) && 
+  // Check if FileList is defined before trying to access properties of files
+  const pdfFileProvided = typeof FileList !== 'undefined' && 
+                          data.userProfilePdf && 
+                          data.userProfilePdf instanceof FileList && 
                           data.userProfilePdf.length > 0;
 
   if (!data.userProfile && !pdfFileProvided) {
@@ -59,7 +63,7 @@ const formSchema = z.object({
   }
 });
 
-export default function ResumeAIPage() {
+export default function LooplicantPage() {
   const [generatedApplication, setGeneratedApplication] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [pdfFileName, setPdfFileName] = useState<string | null>(null);
@@ -90,8 +94,6 @@ export default function ResumeAIPage() {
         });
       } catch (error) {
         console.error("Error reading PDF file:", error);
-        // Consider how to notify user if toast is removed. Maybe an inline error message?
-        // For now, just console log and stop.
         setIsLoading(false);
         return;
       }
@@ -107,9 +109,6 @@ export default function ResumeAIPage() {
 
       if (result.error) {
         console.error("Generation Error:", result.error);
-        // How to display this error to the user without toasts?
-        // Could set an error state and display it in the UI.
-        // For now, error is logged.
       } else if (result.applicationDraft) {
         setGeneratedApplication(result.applicationDraft);
         console.log("Application generated successfully.");
@@ -127,7 +126,6 @@ export default function ResumeAIPage() {
     if (generatedApplication) {
       navigator.clipboard.writeText(generatedApplication).then(() => {
         console.log("Application copied to clipboard.");
-        // Inform user of success without toast? Maybe a temporary message.
       }).catch(() => {
         console.error("Failed to copy text.");
       });
@@ -136,7 +134,6 @@ export default function ResumeAIPage() {
 
   const handleExportToPDF = () => {
     console.log("PDF export functionality will be available in a future update.");
-    // Inform user without toast.
   };
 
   return (
@@ -144,7 +141,7 @@ export default function ResumeAIPage() {
       <header className="my-8 text-center w-full max-w-4xl">
         <div className="flex items-center justify-center space-x-3 mb-3">
           <Bot size={48} className="text-primary" />
-          <h1 className="text-4xl md:text-5xl font-bold text-primary tracking-tight">ResumeAI</h1>
+          <h1 className="text-4xl md:text-5xl font-bold text-primary tracking-tight">Looplicant</h1>
         </div>
         <p className="text-lg text-muted-foreground">
           Craft compelling job applications powered by AI.
@@ -173,7 +170,7 @@ export default function ResumeAIPage() {
                       <FormLabel htmlFor="userProfile">Paste Profile/CV Text</FormLabel>
                       <FormControl>
                         <Textarea
-                          id="userProfile" // Ensure this ID matches FormLabel's htmlFor if not auto-injected
+                          id="userProfile" 
                           placeholder="Paste your CV content or detailed profile here..."
                           className="min-h-[200px] resize-y text-base border-input focus:ring-primary focus:border-primary"
                           {...field}
@@ -182,6 +179,8 @@ export default function ResumeAIPage() {
                             if (e.target.value) {
                               form.setValue('userProfilePdf', undefined, { shouldValidate: true });
                               setPdfFileName(null);
+                              const fileInput = document.getElementById('userProfilePdf') as HTMLInputElement;
+                              if (fileInput) fileInput.value = ''; // Clear file input
                             }
                           }}
                           disabled={!!pdfFileName}
@@ -197,20 +196,20 @@ export default function ResumeAIPage() {
                 <FormField
                   control={form.control}
                   name="userProfilePdf"
-                  render={({ field: { onChange: rhfOnChange, onBlur, name, ref } }) => ( // `ref` here is field.ref
+                  render={({ field: { onChange: rhfOnChange, onBlur, name, ref } }) => (
                     <FormItem>
                       <FormLabel htmlFor="userProfilePdf" className="flex items-center gap-2">
                         <FileUp className="h-5 w-5 text-primary" /> Upload CV (PDF only, max {MAX_FILE_SIZE_MB}MB)
                       </FormLabel>
                       <FormControl>
                         <Input
-                          id="userProfilePdf" // Ensure this ID matches FormLabel's htmlFor
+                          id="userProfilePdf" 
                           type="file"
                           accept="application/pdf"
                           className="border-input focus:ring-primary focus:border-primary"
-                          onBlur={onBlur} // Pass react-hook-form's onBlur
-                          name={name} // Pass react-hook-form's name
-                          ref={ref} // Pass react-hook-form's ref
+                          onBlur={onBlur} 
+                          name={name} 
+                          ref={ref} 
                           onChange={(e) => {
                             const files = e.target.files;
                             rhfOnChange(files); 
@@ -236,7 +235,8 @@ export default function ResumeAIPage() {
                               form.clearErrors('userProfilePdf'); 
                             } else {
                               setPdfFileName(null);
-                              form.trigger('userProfile');
+                              // If file input is cleared, trigger validation on userProfile to ensure one is provided
+                              form.trigger('userProfile'); 
                             }
                           }}
                         />
@@ -270,7 +270,7 @@ export default function ResumeAIPage() {
                       <FormLabel htmlFor="jobDescription" className="sr-only">Job Description</FormLabel>
                       <FormControl>
                         <Textarea
-                          id="jobDescription" // Ensure this ID matches FormLabel's htmlFor
+                          id="jobDescription" 
                           placeholder="Paste the full job description here (min 50 characters)..."
                           className="min-h-[250px] resize-y text-base border-input focus:ring-primary focus:border-primary"
                           {...field}
@@ -342,7 +342,7 @@ export default function ResumeAIPage() {
         )}
       </main>
       <footer className="mt-16 mb-8 text-center text-sm text-muted-foreground">
-        <p>&copy; {new Date().getFullYear()} ResumeAI. Powered by Next.js, Genkit, and Firebase.</p>
+        <p>&copy; {new Date().getFullYear()} Looplicant. Powered by Next.js, Genkit, and Firebase.</p>
       </footer>
     </div>
   );

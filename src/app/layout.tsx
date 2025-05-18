@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'ResumeAI - AI Powered Application Assistant',
-  description: 'Generate compelling job applications and CVs with AI.',
+  title: 'Looplicant - AI Powered Application Assistant',
+  description: 'Generate compelling job applications and CVs with AI using Looplicant.',
 };
 
 export default function RootLayout({
