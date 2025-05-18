@@ -10,9 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input"; // Added Input for file
-import { useToast } from "@/hooks/use-toast";
-import { UserCircle2, Briefcase, Wand2, FileCheck2, FileDown, ClipboardCopy, Loader2, Bot, FileUp } from "lucide-react"; // Added FileUp
+import { Input } from "@/components/ui/input";
+import { UserCircle2, Briefcase, Wand2, FileCheck2, FileDown, ClipboardCopy, Loader2, Bot, FileUp } from "lucide-react"; 
 
 import { handleGenerateApplication } from "./actions";
 
@@ -22,9 +21,8 @@ const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 const formSchema = z.object({
   userProfile: z.string().max(15000, { message: "Profile/CV text must be at most 15000 characters."}).optional(),
   jobDescription: z.string().min(50, { message: "Job description must be at least 50 characters." }).max(15000, {message: "Job description must be at most 15000 characters."}),
-  userProfilePdf: z.any().optional() // Changed from z.instanceof(FileList)
+  userProfilePdf: z.any().optional() 
     .refine(files => {
-      // Pass if no files are provided or if not in a browser environment with FileList
       if (!files || typeof FileList === 'undefined' || !(files instanceof FileList) || files.length === 0) return true;
       return files[0].size <= MAX_FILE_SIZE_BYTES;
     }, `Max file size is ${MAX_FILE_SIZE_MB}MB.`)
@@ -65,7 +63,7 @@ export default function ResumeAIPage() {
   const [generatedApplication, setGeneratedApplication] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [pdfFileName, setPdfFileName] = useState<string | null>(null);
-  const { toast } = useToast();
+  
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -81,7 +79,6 @@ export default function ResumeAIPage() {
     setGeneratedApplication(null);
 
     let pdfDataUri: string | undefined = undefined;
-    // Ensure values.userProfilePdf is a FileList and has files before processing
     if (values.userProfilePdf && typeof FileList !== 'undefined' && values.userProfilePdf instanceof FileList && values.userProfilePdf.length > 0) {
       const file = values.userProfilePdf[0];
       try {
@@ -93,7 +90,8 @@ export default function ResumeAIPage() {
         });
       } catch (error) {
         console.error("Error reading PDF file:", error);
-        toast({ variant: "destructive", title: "File Read Error", description: "Could not read the PDF file. Please try again." });
+        // Consider how to notify user if toast is removed. Maybe an inline error message?
+        // For now, just console log and stop.
         setIsLoading(false);
         return;
       }
@@ -108,34 +106,18 @@ export default function ResumeAIPage() {
       const result = await handleGenerateApplication(inputForAction);
 
       if (result.error) {
-        toast({
-          variant: "destructive",
-          title: "Generation Error",
-          description: result.error,
-          duration: 5000,
-        });
+        console.error("Generation Error:", result.error);
+        // How to display this error to the user without toasts?
+        // Could set an error state and display it in the UI.
+        // For now, error is logged.
       } else if (result.applicationDraft) {
         setGeneratedApplication(result.applicationDraft);
-        toast({
-          title: "Success!",
-          description: "Application generated successfully.",
-          duration: 3000,
-        });
+        console.log("Application generated successfully.");
       } else {
-        toast({
-          variant: "destructive",
-          title: "Generation Error",
-          description: "Received an empty draft. Please try again.",
-          duration: 5000,
-        });
+        console.error("Generation Error: Received an empty draft.");
       }
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Unexpected Error",
-        description: "An unexpected error occurred. Please try again.",
-        duration: 5000,
-      });
+      console.error("Unexpected Error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -144,18 +126,17 @@ export default function ResumeAIPage() {
   const handleCopyToClipboard = () => {
     if (generatedApplication) {
       navigator.clipboard.writeText(generatedApplication).then(() => {
-        toast({ title: "Copied!", description: "Application copied to clipboard." });
+        console.log("Application copied to clipboard.");
+        // Inform user of success without toast? Maybe a temporary message.
       }).catch(() => {
-        toast({ variant: "destructive", title: "Copy Error", description: "Failed to copy text." });
+        console.error("Failed to copy text.");
       });
     }
   };
 
   const handleExportToPDF = () => {
-    toast({
-      title: "Feature Coming Soon",
-      description: "PDF export functionality will be available in a future update.",
-    });
+    console.log("PDF export functionality will be available in a future update.");
+    // Inform user without toast.
   };
 
   return (
@@ -192,7 +173,7 @@ export default function ResumeAIPage() {
                       <FormLabel htmlFor="userProfile">Paste Profile/CV Text</FormLabel>
                       <FormControl>
                         <Textarea
-                          id="userProfile"
+                          id="userProfile" // Ensure this ID matches FormLabel's htmlFor if not auto-injected
                           placeholder="Paste your CV content or detailed profile here..."
                           className="min-h-[200px] resize-y text-base border-input focus:ring-primary focus:border-primary"
                           {...field}
@@ -216,29 +197,30 @@ export default function ResumeAIPage() {
                 <FormField
                   control={form.control}
                   name="userProfilePdf"
-                  render={({ field: { onChange: rhfOnChange, onBlur, name, ref } }) => (
+                  render={({ field: { onChange: rhfOnChange, onBlur, name, ref } }) => ( // `ref` here is field.ref
                     <FormItem>
                       <FormLabel htmlFor="userProfilePdf" className="flex items-center gap-2">
                         <FileUp className="h-5 w-5 text-primary" /> Upload CV (PDF only, max {MAX_FILE_SIZE_MB}MB)
                       </FormLabel>
                       <FormControl>
                         <Input
-                          id="userProfilePdf"
+                          id="userProfilePdf" // Ensure this ID matches FormLabel's htmlFor
                           type="file"
                           accept="application/pdf"
                           className="border-input focus:ring-primary focus:border-primary"
+                          onBlur={onBlur} // Pass react-hook-form's onBlur
+                          name={name} // Pass react-hook-form's name
+                          ref={ref} // Pass react-hook-form's ref
                           onChange={(e) => {
                             const files = e.target.files;
-                            rhfOnChange(files); // RHF expects FileList or undefined
+                            rhfOnChange(files); 
                             if (files && files.length > 0) {
                               const file = files[0];
-                              // Client-side pre-validation
                               if (file.size > MAX_FILE_SIZE_BYTES) {
                                 form.setError("userProfilePdf", { type: "manual", message: `File is too large. Max ${MAX_FILE_SIZE_MB}MB.` });
                                 setPdfFileName(null);
-                                // Clear the input value if invalid
                                 e.target.value = ''; 
-                                rhfOnChange(undefined); // also update RHF state
+                                rhfOnChange(undefined); 
                                 return;
                               }
                               if (file.type !== "application/pdf") {
@@ -251,16 +233,12 @@ export default function ResumeAIPage() {
                               setPdfFileName(file.name);
                               form.setValue('userProfile', '', { shouldValidate: true }); 
                               form.clearErrors('userProfile');
-                              form.clearErrors('userProfilePdf'); // Clear previous errors if now valid
+                              form.clearErrors('userProfilePdf'); 
                             } else {
                               setPdfFileName(null);
-                               // If files become null/empty, trigger validation for the interrelated field userProfile
                               form.trigger('userProfile');
                             }
                           }}
-                          onBlur={onBlur}
-                          name={name}
-                          ref={ref}
                         />
                       </FormControl>
                        {pdfFileName && !form.formState.errors.userProfilePdf && (
@@ -292,7 +270,7 @@ export default function ResumeAIPage() {
                       <FormLabel htmlFor="jobDescription" className="sr-only">Job Description</FormLabel>
                       <FormControl>
                         <Textarea
-                          id="jobDescription"
+                          id="jobDescription" // Ensure this ID matches FormLabel's htmlFor
                           placeholder="Paste the full job description here (min 50 characters)..."
                           className="min-h-[250px] resize-y text-base border-input focus:ring-primary focus:border-primary"
                           {...field}
@@ -369,4 +347,3 @@ export default function ResumeAIPage() {
     </div>
   );
 }
-

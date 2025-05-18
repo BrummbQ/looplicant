@@ -1,8 +1,6 @@
 "use client"
 
 import * as React from "react"
-import * as LabelPrimitive from "@radix-ui/react-label"
-import { Slot } from "@radix-ui/react-slot"
 import {
   Controller,
   FormProvider,
@@ -87,8 +85,8 @@ const FormItem = React.forwardRef<
 FormItem.displayName = "FormItem"
 
 const FormLabel = React.forwardRef<
-  React.ElementRef<typeof LabelPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>
+  React.ElementRef<typeof Label>,
+  React.ComponentPropsWithoutRef<typeof Label>
 >(({ className, ...props }, ref) => {
   const { error, formItemId } = useFormField()
 
@@ -103,27 +101,33 @@ const FormLabel = React.forwardRef<
 })
 FormLabel.displayName = "FormLabel"
 
-const FormControl = React.forwardRef<
-  React.ElementRef<typeof Slot>,
-  React.ComponentPropsWithoutRef<typeof Slot>
->(({ ...props }, ref) => {
-  const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
+const FormControl = ({ children, ...restProps }: React.HTMLAttributes<HTMLElement>) => {
+  const { error, formItemId, formDescriptionId, formMessageId } = useFormField();
+  const childElement = React.Children.only(children);
 
-  return (
-    <Slot
-      ref={ref}
-      id={formItemId}
-      aria-describedby={
-        !error
-          ? `${formDescriptionId}`
-          : `${formDescriptionId} ${formMessageId}`
-      }
-      aria-invalid={!!error}
-      {...props}
-    />
-  )
-})
-FormControl.displayName = "FormControl"
+  if (!React.isValidElement(childElement)) {
+    // In a real app, you might throw an error or handle this more gracefully
+    return <>{children}</>;
+  }
+
+  const injectedProps: React.HTMLAttributes<HTMLElement> & { id?: string; 'aria-invalid'?: boolean; 'aria-describedby'?: string } = {
+    id: formItemId,
+    'aria-invalid': !!error,
+    'aria-describedby': !error
+      ? formDescriptionId
+      : `${formDescriptionId} ${formMessageId}`,
+  };
+  
+  // Props passed to FormControl (restProps) are merged, then injectedProps, then child's original props.
+  // Injected props should take precedence for accessibility attributes.
+  return React.cloneElement(childElement as React.ReactElement<any, string | React.JSXElementConstructor<any>>, { 
+      ...childElement.props, // Start with child's own props (like ...field from react-hook-form)
+      ...restProps, // Then, props passed directly to <FormControl className="foo">
+      ...injectedProps, // Finally, our accessibility props, ensuring they override if needed
+  });
+};
+FormControl.displayName = "FormControl";
+
 
 const FormDescription = React.forwardRef<
   HTMLParagraphElement,
