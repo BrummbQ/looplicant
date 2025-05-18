@@ -1,4 +1,5 @@
-// 'use server';
+
+'use server';
 /**
  * @fileOverview Generates a draft application based on a job description and user profile.
  *
@@ -7,15 +8,17 @@
  * - GenerateApplicationOutput - The return type for the generateApplication function.
  */
 
-'use server';
-
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateApplicationInputSchema = z.object({
   jobDescription: z.string().describe('The job description to generate the application for.'),
-  userProfile: z.string().describe('The user profile information, including skills and experience.'),
+  userProfile: z.string().optional().describe('The user profile information, including skills and experience (used if no PDF is provided).'),
+  userProfilePdfDataUri: z.string().optional().describe("A PDF of the user's profile/CV, as a data URI. Expected format: 'data:application/pdf;base64,<encoded_data>'. Used if provided, otherwise userProfile text is used."),
+}).refine(data => !!data.userProfile || !!data.userProfilePdfDataUri, {
+  message: "Either userProfile text or userProfilePdfDataUri must be provided.",
 });
+
 export type GenerateApplicationInput = z.infer<typeof GenerateApplicationInputSchema>;
 
 const GenerateApplicationOutputSchema = z.object({
@@ -33,11 +36,16 @@ const prompt = ai.definePrompt({
   output: {schema: GenerateApplicationOutputSchema},
   prompt: `You are an AI assistant that generates a draft application based on a job description and a user profile.
 
-  Job Description: {{{jobDescription}}}
+Job Description: {{{jobDescription}}}
 
-  User Profile: {{{userProfile}}}
+{{#if userProfilePdfDataUri}}
+The user's profile/CV has been provided as a PDF document. Please extract the necessary information from the following document to understand their skills and experience:
+User Profile PDF: {{media url=userProfilePdfDataUri}}
+{{else}}
+User Profile: {{{userProfile}}}
+{{/if}}
 
-  Please generate a draft application that highlights the relevant skills and experience from the user profile for the job description.`, 
+Based on the information from the job description and the user's profile (either from the text input or extracted from the PDF), please generate a compelling draft application. Ensure the draft highlights the most relevant skills and experience for the specified job.`,
 });
 
 const generateApplicationFlow = ai.defineFlow(
