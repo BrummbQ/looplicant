@@ -2,26 +2,18 @@
 
 import { ai } from "@/ai/genkit";
 import { z } from "genkit";
+import { BaseExperience } from "./schema";
 
-const ExtractSkillsInputSchema = z
-  .object({
-    userProfile: z
-      .string()
-      .optional()
-      .describe(
-        "The user profile information, including skills and experience (used if no PDF is provided)."
-      ),
-    userProfilePdfDataUri: z
-      .string()
-      .optional()
-      .describe(
-        "A PDF of the user's profile/CV, as a data URI. Expected format: 'data:application/pdf;base64,<encoded_data>'. Used if provided, otherwise userProfile text is used."
-      ),
-  })
-  .refine((data) => !!data.userProfile || !!data.userProfilePdfDataUri, {
-    message:
-      "Either userProfile text or userProfilePdfDataUri must be provided.",
-  });
+const ExtractSkillsInputSchema = z.object({
+  experience: z.array(
+    BaseExperience.extend({
+      id: z
+        .string()
+        .uuid()
+        .describe("The unique identifier of the experience."),
+    }).describe("A list of experiences with detailed attributes.")
+  ),
+});
 
 export type ExtractSkillsInput = z.infer<typeof ExtractSkillsInputSchema>;
 const ExtractSkillsOutputSchema = z.object({
@@ -41,8 +33,16 @@ const ExtractSkillsOutputSchema = z.object({
           .describe("The proficiency level (0–100)."),
         description: z
           .string()
-          .optional()
-          .describe("Optional explanation or context for the skill."),
+          .describe(
+            "Explanation or context for the skill in which it was used and how extensive."
+          ),
+        sources: z
+          .array(
+            z.object({
+              experienceId: z.string().describe("The id of the experience"),
+            })
+          )
+          .describe("List of experiences the skill was extracted from."),
       })
     )
     .describe("A list of extracted skills with detailed attributes."),
@@ -55,21 +55,48 @@ export async function extractSkills(
   return ExtractSkillsFlow(input);
 }
 
+function formatExperienceList({ experience }: ExtractSkillsInput): string {
+  return experience
+    .map((exp) => {
+      const start = exp.startDate;
+      const end = exp.endDate;
+      const location = exp.location ? ` (${exp.location})` : "";
+      const skillList = exp.skills.length
+        ? `Skills: ${exp.skills.join(", ")}`
+        : "";
+
+      const bullets = exp.bulletPoints?.length
+        ? exp.bulletPoints.map((b) => `- ${b}`).join("\n")
+        : "";
+
+      return `
+## Experience (id: ${exp.id}): ${exp.title} at ${exp.company}${location}
+Duration: ${start} - ${end}
+
+${exp.description}
+
+${skillList}
+
+${bullets}
+      `.trim();
+    })
+    .join("\n\n---\n\n");
+}
+
 const prompt = ai.definePrompt({
   name: "ExtractSkillsPrompt",
-  input: { schema: ExtractSkillsInputSchema },
+  input: { schema: z.object({ experience: z.string() }) },
   output: { schema: ExtractSkillsOutputSchema },
-  prompt: `You are an AI assistant that extracts and summarizes skills from a provided profile.
+  prompt: `You are an AI assistant that extracts and summarizes skills from a provided experience list.
 
-{{#if userProfilePdfDataUri}}
-The user's profile/CV has been provided as a PDF document. Please extract the necessary information from the following document to understand their skills and experience:
-User Profile PDF: {{media url=userProfilePdfDataUri}}
-{{else}}
-User Profile: {{{userProfile}}}
-{{/if}}
+Here is the user's experience list:
 
-Based on the information from the user's profile (either from the text input or extracted from the PDF), please extract all mentioned skills that are usefull in a job. Try to consolidate similar skills and increase the level if they are mentioned often.
-Try to find a good set of categories for each profile, that balances the skills fairly.`,
+{{{experience}}}
+
+Each experience is separated by "---" and includes a list of skills. Collect those skills and filter duplicates.
+If the skill is not mentioned in the experience, please do not include it. Each skill should be referenced by the experience id. Use the exact skill names as found in the experience.
+Try to find a maximum of 5 categories for the skills. If you find more, just pick the most relevant ones.
+`,
 });
 
 const ExtractSkillsFlow = ai.defineFlow(
@@ -79,7 +106,9 @@ const ExtractSkillsFlow = ai.defineFlow(
     outputSchema: ExtractSkillsOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
+    const formattedExperience = formatExperienceList(input);
+    console.log(formattedExperience);
+    const { output } = await prompt({ experience: formattedExperience });
     return output!;
   }
 );

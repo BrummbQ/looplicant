@@ -1,10 +1,10 @@
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
-import { Bone, UserCircle2 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Bone } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Skills } from "../lib/actions";
 import * as d3 from "d3";
 import { cn } from "@/lib/utils";
 import CardLoader from "@/components/ui/CardLoader";
+import { createSimulation, SkillNode } from "../lib/map-helper";
 
 const colors = [
   "bg-red-600",
@@ -40,6 +40,62 @@ export default function SkillMap({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState<number>(0);
+  const simulationRef = useRef<d3.Simulation<SkillNode, any> | null>(null);
+  const [nodes, setNodes] = useState<any[]>([]);
+
+  const toggleCategory = (category: string) => {
+    const sim = simulationRef.current;
+    if (!sim || !skills) return;
+
+    const skillNodes = skills.filter((s) => s.category === category);
+    const currentNodes = sim.nodes();
+    const categoryNode = currentNodes.find((n) => n.id === `cat-${category}`);
+    if (!categoryNode) return;
+
+    // fix category node
+    const fx = categoryNode.x;
+    const fy = categoryNode.y;
+    currentNodes.forEach((n) => {
+      n.fx = undefined;
+      n.fy = undefined;
+    });
+    categoryNode.fx = fx;
+    categoryNode.fy = fy;
+
+    // filter nodes not in category
+    const filteredNodes = currentNodes.filter((n) => n.type === "category");
+
+    // add new nodes for category
+    const newSkillNodes = skillNodes.map((skill, i) => ({
+      id: skill.title,
+      title: skill.title,
+      category: skill.category,
+      type: "skill",
+      color: colors[i % colors.length],
+      x: fx,
+      y: fy,
+    }));
+    // link skills to categories
+    const links = newSkillNodes.map((skill) => ({
+      source: skill.title,
+      target: `cat-${skill.category}`,
+    }));
+
+    const updatedNodes = [...filteredNodes, ...newSkillNodes];
+
+    sim.nodes(updatedNodes as SkillNode[]);
+    sim.force(
+      "link",
+      d3
+        .forceLink(links)
+        .id((d: any) => d.id)
+        .distance(500)
+        .strength(55)
+    );
+
+    for (let i = 0; i < 300; ++i) sim.tick();
+    setNodes(updatedNodes);
+  };
 
   useEffect(() => {
     const el = containerRef.current;
@@ -55,55 +111,12 @@ export default function SkillMap({
     // ref is null if isLoading is true
   }, [isLoading]);
 
-  const nodes = useMemo(() => {
-    if (!skills) return [];
+  useEffect(() => {
+    if (!skills) return;
 
-    const categories = [...new Set(skills.map((s) => s.category))];
-    const categoryNodes = categories.map((cat, i) => ({
-      id: `cat-${cat}`,
-      type: "category",
-      title: cat,
-      color: "bg-gray-700",
-      r: 40,
-      x: 0,
-      y: 0,
-    }));
-
-    const skillNodes = skills.map((skill, i) => ({
-      id: skill.title,
-      title: skill.title,
-      category: skill.category,
-      type: "skill",
-      r: 20,
-      color: colors[i % colors.length],
-      x: 0,
-      y: 0,
-    }));
-
-    const allNodes = [...categoryNodes, ...skillNodes];
-
-    // link skills to categories
-    const links = skillNodes.map((skill) => ({
-      source: skill.title,
-      target: `cat-${skill.category}`,
-    }));
-    const simulation = d3
-      .forceSimulation(allNodes as d3.SimulationNodeDatum[])
-      .force(
-        "link",
-        d3
-          .forceLink(links)
-          .id((d: any) => d.id)
-          .distance(50)
-      )
-      .force("charge", d3.forceManyBody().strength(-500))
-      .force("x", d3.forceX(width / 2))
-      .force("y", d3.forceY(height / 2))
-      .stop();
-
-    for (let i = 0; i < 300; ++i) simulation.tick();
-
-    return [...allNodes];
+    const [simulation, categoryNodes] = createSimulation(skills, width, height);
+    simulationRef.current = simulation;
+    setNodes(categoryNodes);
   }, [skills, width]);
 
   if (!skills && !isLoading) return;
@@ -125,6 +138,9 @@ export default function SkillMap({
             )}
             style={{ transform: `translate(${x}px, ${y}px)` }}
             title={`${title}`}
+            onClick={() => {
+              if (type === "category") toggleCategory(title);
+            }}
           >
             {title}
           </div>

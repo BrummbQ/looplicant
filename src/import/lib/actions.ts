@@ -24,9 +24,9 @@ export async function handleExtractSkills(
   input: ExtractSkillsInput // Updated type
 ): Promise<SkillsActionResult> {
   try {
-    if (!input.userProfile && !input.userProfilePdfDataUri) {
+    if (!input.experience?.length) {
       return {
-        error: "Either User Profile text or a PDF CV upload is required.",
+        error: "No experiences provided. Please provide a list of experiences.",
       };
     }
 
@@ -43,10 +43,12 @@ export async function handleExtractSkills(
   }
 }
 
-export type Experience = ExtractExperienceOutput["experience"][0];
+export type Experience = ExtractExperienceOutput["experience"][0] & {
+  id: string;
+};
 
 interface ExperienceActionResult {
-  experience?: ExtractExperienceOutput["experience"];
+  experience?: Experience[];
   error?: string;
 }
 
@@ -66,7 +68,14 @@ export async function handleExtractExperience(
         error: "AI failed to extract experience. The response was empty.",
       };
     }
-    return { experience: result.experience };
+
+    // assign uuid to each experience
+    const experienceWithId = result.experience.map((exp) => ({
+      ...exp,
+      id: crypto.randomUUID(),
+    }));
+
+    return { experience: experienceWithId };
   } catch (e: any) {
     console.error("Error extracting skills:", e);
     return { error: genkitErrorMessage(e) };

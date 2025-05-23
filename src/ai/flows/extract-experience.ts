@@ -2,6 +2,7 @@
 
 import { ai } from "@/ai/genkit";
 import { z } from "genkit";
+import { BaseExperience } from "./schema";
 
 const ExtractExperienceInputSchema = z
   .object({
@@ -26,28 +27,10 @@ const ExtractExperienceInputSchema = z
 export type ExtractExperienceInput = z.infer<
   typeof ExtractExperienceInputSchema
 >;
+
 const ExtractExperienceOutputSchema = z.object({
   experience: z
-    .array(
-      z.object({
-        title: z.string().describe("The title or role of the experience."),
-        company: z.string().describe("The company of the experience."),
-        startDate: z.date().describe("The start date of the experience."),
-        endDate: z
-          .date()
-          .optional()
-          .describe("The end date of the experience."),
-        description: z.string().describe("Short summary of the experience."),
-        skills: z
-          .array(z.string())
-          .describe("Keyword list of skills used in this experience."),
-        location: z.string().optional().describe("Location of the experience."),
-        bulletPoints: z
-          .array(z.string())
-          .optional()
-          .describe("Bullet points of the experience unmodified"),
-      })
-    )
+    .array(BaseExperience)
     .describe("A list of extracted experiences with detailed attributes."),
 });
 export type ExtractExperienceOutput = z.infer<

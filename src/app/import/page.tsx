@@ -25,14 +25,13 @@ export default function ImportPage() {
     },
   });
 
-  const { extractSkills, skills, isSkillsLoading, clearSkills } =
-    useExtractSkills();
   const {
     extractExperience,
     experience,
     isExperienceLoading,
     clearExperience,
   } = useExtractExperience();
+  const { skills, isSkillsLoading, clearSkills } = useExtractSkills(experience);
 
   function clearData() {
     clearSkills();
@@ -40,25 +39,21 @@ export default function ImportPage() {
   }
 
   async function onSubmit(values: ImportFormSchemaType) {
-    await Promise.all([
-      extractSkills({
-        userProfile: values.userProfile ?? "",
-        userProfilePdf: values.userProfilePdf,
-      }),
-      extractExperience({
-        userProfile: values.userProfile ?? "",
-        userProfilePdf: values.userProfilePdf,
-      }),
-    ]);
+    await extractExperience({
+      userProfile: values.userProfile ?? "",
+      userProfilePdf: values.userProfilePdf,
+    });
   }
 
   return (
     <main className="w-full max-w-4xl space-y-8">
-      {skills == null && (
+      {skills == null && experience == null && (
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <PersonalInputCard form={form} />
-            <ImportDataButton isLoading={false} />
+            <ImportDataButton
+              isLoading={isSkillsLoading || isExperienceLoading}
+            />
           </form>
         </Form>
       )}
