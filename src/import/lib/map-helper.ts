@@ -1,13 +1,23 @@
 import * as d3 from "d3";
-import { Skills } from "./actions";
+import { Skill, Skills } from "./actions";
 
 export type SkillNode = d3.SimulationNodeDatum & {
   id: string;
   title: string;
   type: "category" | "skill";
   color: string;
+  textColor: string;
   category?: string;
+  skill?: Skill;
 };
+
+export const categoryDefaultBgColor = "bg-secondary";
+export const categoryDefaultTextColor = "text-secondary-foreground";
+
+export const skillNodeId = (skill: {
+  title: string;
+  category?: string;
+}): string => `${skill.title}-${skill.category}`;
 
 export function createSimulation(
   skills: Skills,
@@ -19,7 +29,8 @@ export function createSimulation(
     id: `cat-${cat}`,
     type: "category",
     title: cat,
-    color: "bg-gray-700",
+    color: categoryDefaultBgColor,
+    textColor: categoryDefaultTextColor,
     x: 0,
     y: 0,
     vx: 0,

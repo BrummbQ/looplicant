@@ -107,7 +107,6 @@ const ExtractSkillsFlow = ai.defineFlow(
   },
   async (input) => {
     const formattedExperience = formatExperienceList(input);
-    console.log(formattedExperience);
     const { output } = await prompt({ experience: formattedExperience });
     return output!;
   }

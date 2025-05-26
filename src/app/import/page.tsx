@@ -64,7 +64,11 @@ export default function ImportPage() {
           Update Data
         </Button>
       )}
-      <SkillMap skills={skills} isLoading={isSkillsLoading} />
+      <SkillMap
+        skills={skills}
+        experience={experience}
+        isLoading={isSkillsLoading}
+      />
       <ExperienceTimeline
         experience={experience}
         isLoading={isExperienceLoading}

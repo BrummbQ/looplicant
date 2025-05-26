@@ -30,8 +30,8 @@ export default function ExperienceTimeline({
       icon={Activity}
     >
       <div className="border-l border-muted pl-6 space-y-12">
-        {experience?.map((exp, i) => (
-          <section key={i} className="relative group">
+        {experience?.map((exp) => (
+          <section key={exp.id} id={exp.id} className="relative group">
             <div className="absolute -left-9 top-3 w-6 h-6 rounded-full bg-primary border-4 border-secondary" />
             <div className="text-sm text-muted-foreground">
               <div className="flex justify-between items-center">

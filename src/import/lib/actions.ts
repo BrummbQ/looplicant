@@ -31,6 +31,7 @@ export async function handleExtractSkills(
     }
 
     const result = await extractSkills(input);
+    console.debug("Extracted skills result:", result);
     if (!result.skills) {
       return {
         error: "AI failed to extract skills. The response was empty.",
