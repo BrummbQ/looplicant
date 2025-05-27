@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { useToast } from "@/components/ui/ToastContext";
 import { parsePdfToDataUri } from "@/lib/parse-pdf-to-datauri";
-import { Experience, handleExtractExperience } from "../lib/actions";
+import {
+  Experience,
+  handleExtractExperience,
+  handleSaveExperience,
+} from "../lib/actions";
 
 export function useExtractExperience() {
   const [experience, setExperience] = useState<Experience[]>();
@@ -40,6 +44,8 @@ export function useExtractExperience() {
       if (!result.experience) {
         throw new Error("Empty Experience");
       }
+
+      await handleSaveExperience(result.experience);
 
       setExperience(result.experience);
       addToast("Experience extracted successfully.", "success");

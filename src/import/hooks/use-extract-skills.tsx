@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { useToast } from "@/components/ui/ToastContext";
-import { Experience, handleExtractSkills, Skills } from "../lib/actions";
+import {
+  Experience,
+  handleExtractSkills,
+  handleSaveSkills,
+  Skills,
+} from "../lib/actions";
 
 export function useExtractSkills(experience?: Experience[]) {
   const [skills, setSkills] = useState<Skills>();
@@ -26,9 +31,7 @@ export function useExtractSkills(experience?: Experience[]) {
           experience: values.experience,
         };
 
-        console.log("Extracting skills with input:", inputForAction);
         const result = await handleExtractSkills(inputForAction);
-        console.log("got result:", result);
 
         if (isCancelled) {
           return;
@@ -41,6 +44,8 @@ export function useExtractSkills(experience?: Experience[]) {
         if (!result.skills) {
           throw new Error("Empty skills");
         }
+
+        await handleSaveSkills(result.skills);
 
         setSkills(result.skills);
         addToast("Skills extracted successfully.", "success");

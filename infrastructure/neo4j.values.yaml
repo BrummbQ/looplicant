@@ -1,0 +1,17 @@
+neo4j:
+  name: neo4j-looplicant
+  resources:
+    cpu: "0.5"
+    memory: "2Gi"
+
+services:
+  # A LoadBalancer Service for external Neo4j driver applications and Neo4j Browser
+  neo4j:
+    enabled: false
+
+volumes:
+  data:
+    mode: defaultStorageClass
+    defaultStorageClass:
+      requests:
+        storage: 2Gi

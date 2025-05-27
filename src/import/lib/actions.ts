@@ -11,6 +11,7 @@ import {
   type ExtractSkillsInput,
 } from "@/ai/flows/extract-skills";
 import { genkitErrorMessage } from "@/lib/genkit-helper";
+import { saveAndLinkSkills, saveExperience } from "./dal";
 
 export type Skill = ExtractSkillsOutput["skills"][0];
 export type Skills = ExtractSkillsOutput["skills"];
@@ -81,4 +82,12 @@ export async function handleExtractExperience(
     console.error("Error extracting skills:", e);
     return { error: genkitErrorMessage(e) };
   }
+}
+
+export async function handleSaveExperience(experience: Experience[]) {
+  await saveExperience(experience);
+}
+
+export async function handleSaveSkills(skills: Skills) {
+  await saveAndLinkSkills(skills);
 }
