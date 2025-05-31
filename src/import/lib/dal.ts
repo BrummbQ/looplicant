@@ -1,29 +1,33 @@
 import "server-only";
 
-import neo4j from "neo4j-driver";
 import { Experience, Skills } from "./actions";
-
-const driver = neo4j.driver(
-  process.env.NEO4J_URI!,
-  neo4j.auth.basic(process.env.NEO4J_USER!, process.env.NEO4J_PASSWORD!)
-);
+import { getDbDriver } from "@/db";
+import { verifyAuthSession } from "@/lib/verify-auth";
 
 function getSession() {
-  return driver.session();
+  return getDbDriver().session();
 }
 
 export async function saveExperience(experience: Experience[]) {
+  const auth = await verifyAuthSession();
   const session = getSession();
 
   try {
     await session.executeWrite(async (tx) => {
-      // Clear all existing nodes and relationships
-      await tx.run(`MATCH (n) DETACH DELETE n`);
+      // Delete ONLY the user's existing experiences
+      await tx.run(
+        `
+        MATCH (u:User {email: $userEmail})-[:HAS_EXPERIENCE]->(e:Experience)
+        DETACH DELETE e
+        `,
+        { userEmail: auth.user.email }
+      );
 
       for (const exp of experience) {
         // Merge Experience node
         await tx.run(
           `
+              MATCH (u:User {email: $userEmail})
               MERGE (e:Experience {id: $id})
               SET e.title = $title,
                   e.company = $company,
@@ -33,6 +37,7 @@ export async function saveExperience(experience: Experience[]) {
                   e.location = $location,
                   e.bulletPoints = $bulletPoints,
                   e.skills = $skills
+              MERGE (u)-[:HAS_EXPERIENCE]->(e)
               `,
           {
             id: exp.id,
@@ -44,6 +49,7 @@ export async function saveExperience(experience: Experience[]) {
             location: exp.location ?? null,
             bulletPoints: exp.bulletPoints ?? [],
             skills: exp.skills ?? [],
+            userEmail: auth.user.email,
           }
         );
       }
@@ -57,6 +63,7 @@ export async function saveExperience(experience: Experience[]) {
 }
 
 export async function saveAndLinkSkills(skills: Skills) {
+  await verifyAuthSession();
   const session = getSession();
 
   try {

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import "@/app/globals.css";
 import { ToastProvider } from "@/components/ui/ToastContext";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     "Generate compelling job applications and CVs with AI using Looplicant.",
 };
 
-export default function RootLayout({
+export default function MainLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -35,7 +35,7 @@ export default function RootLayout({
           <div className="min-h-screen bg-background text-foreground flex flex-col items-center px-4 sm:px-6 md:px-8">
             <Header />
 
-            {children}
+            <main className="w-full max-w-4xl space-y-8">{children}</main>
 
             <Footer />
           </div>
