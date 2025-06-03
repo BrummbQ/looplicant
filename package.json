@@ -10,7 +10,8 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "vitest"
+    "test": "vitest",
+    "start:maildev": "maildev"
   },
   "dependencies": {
     "@auth/neo4j-adapter": "^2.9.1",
@@ -34,6 +35,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.52.0",
     "@tailwindcss/postcss": "^4.1.7",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.3.0",
@@ -43,6 +45,7 @@
     "@vitejs/plugin-react": "^4.4.1",
     "genkit-cli": "^1.8.0",
     "jsdom": "^26.1.0",
+    "maildev": "^2.2.1",
     "postcss": "^8",
     "tailwindcss": "^4.1.7",
     "typescript": "^5",
