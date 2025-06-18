@@ -1,6 +1,8 @@
 import { auth } from "@/auth";
+import { getExperience, getSkills } from "@/import/lib/dal";
 import ImportForm from "@/import/ui/ImportForm";
 import { handleSignIn } from "@/lib/actions";
+import { Suspense } from "react";
 
 export default async function ImportPage() {
   const session = await auth();
@@ -8,5 +10,12 @@ export default async function ImportPage() {
     await handleSignIn();
   }
 
-  return <ImportForm />;
+  const experience = getExperience();
+  const skills = getSkills();
+
+  return (
+    <Suspense fallback={<></>}>
+      <ImportForm experiencePromise={experience} skillsPromise={skills} />
+    </Suspense>
+  );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useToast } from "@/components/ui/ToastContext";
 import {
   Experience,
@@ -7,8 +7,8 @@ import {
   Skills,
 } from "../lib/actions";
 
-export function useExtractSkills(experience?: Experience[]) {
-  const [skills, setSkills] = useState<Skills>();
+export function useExtractSkills(resolvedSkills: Skills) {
+  const [skills, setSkills] = useState<Skills | undefined>(resolvedSkills);
   const [isSkillsLoading, setIsSkillsLoading] = useState(false);
   const { addToast } = useToast();
 
@@ -16,57 +16,41 @@ export function useExtractSkills(experience?: Experience[]) {
     setSkills(undefined);
   }
 
-  useEffect(() => {
-    if (!experience) {
-      return;
-    }
-    let isCancelled = false;
+  async function extractSkills(experience: Experience[]) {
+    setIsSkillsLoading(true);
+    setSkills(undefined);
 
-    const run = async (values: { experience: Experience[] }) => {
-      setIsSkillsLoading(true);
-      setSkills(undefined);
+    try {
+      const inputForAction = {
+        experience: experience,
+      };
 
-      try {
-        const inputForAction = {
-          experience: values.experience,
-        };
+      const result = await handleExtractSkills(inputForAction);
 
-        const result = await handleExtractSkills(inputForAction);
-
-        if (isCancelled) {
-          return;
-        }
-
-        if (result.error) {
-          throw new Error(result.error);
-        }
-
-        if (!result.skills) {
-          throw new Error("Empty skills");
-        }
-
-        await handleSaveSkills(result.skills);
-
-        setSkills(result.skills);
-        addToast("Skills extracted successfully.", "success");
-      } catch (error) {
-        console.error("Skills Extraction Error:", error);
-        addToast("Skills Extraction failed.", "error");
-      } finally {
-        setIsSkillsLoading(false);
+      if (result.error) {
+        throw new Error(result.error);
       }
-    };
 
-    run({ experience }).then();
+      if (!result.skills) {
+        throw new Error("Empty skills");
+      }
 
-    return () => {
-      isCancelled = true;
-    };
-  }, [experience]);
+      await handleSaveSkills(result.skills);
+
+      setSkills(result.skills);
+      addToast("Skills extracted successfully.", "success");
+    } catch (error) {
+      console.error("Skills Extraction Error:", error);
+      addToast("Skills Extraction failed.", "error");
+    } finally {
+      setIsSkillsLoading(false);
+    }
+  }
 
   return {
     skills,
     isSkillsLoading,
     clearSkills,
+    extractSkills,
   };
 }

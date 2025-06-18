@@ -12,8 +12,19 @@ import ImportDataButton from "./ImportDataButton";
 import PersonalInputCard from "./PersonalInputCard";
 import SkillMap from "./SkillMap";
 import { Form } from "@/components/ui/Form";
+import { Experience, Skills } from "../lib/actions";
+import { use } from "react";
 
-export default function ImportForm() {
+export default function ImportForm({
+  experiencePromise,
+  skillsPromise,
+}: {
+  experiencePromise: Promise<Experience[]>;
+  skillsPromise: Promise<Skills>;
+}) {
+  const resolvedExperience = use(experiencePromise);
+  const resolvedSkills = use(skillsPromise);
+
   const form = useForm<ImportFormSchemaType>({
     resolver: zodResolver(importFormSchema),
     defaultValues: {
@@ -27,8 +38,9 @@ export default function ImportForm() {
     experience,
     isExperienceLoading,
     clearExperience,
-  } = useExtractExperience();
-  const { skills, isSkillsLoading, clearSkills } = useExtractSkills(experience);
+  } = useExtractExperience(resolvedExperience);
+  const { skills, isSkillsLoading, clearSkills, extractSkills } =
+    useExtractSkills(resolvedSkills);
 
   function clearData() {
     clearSkills();
@@ -36,10 +48,13 @@ export default function ImportForm() {
   }
 
   async function onSubmit(values: ImportFormSchemaType) {
-    await extractExperience({
+    const experience = await extractExperience({
       userProfile: values.userProfile ?? "",
       userProfilePdf: values.userProfilePdf,
     });
+    if (experience != null) {
+      await extractSkills(experience);
+    }
   }
 
   return (

@@ -1,11 +1,50 @@
 import "server-only";
 
-import { Experience, Skills } from "./actions";
+import { Experience, Skill, Skills } from "./actions";
 import { getDbDriver } from "@/db";
 import { verifyAuthSession } from "@/lib/verify-auth";
 
 function getSession() {
   return getDbDriver().session();
+}
+
+export async function getExperience(): Promise<Experience[]> {
+  const auth = await verifyAuthSession();
+  const session = getSession();
+
+  try {
+    const result = await session.executeRead(async (tx) => {
+      const res = await tx.run(
+        `
+        MATCH (u:User {email: $userEmail})-[:HAS_EXPERIENCE]->(e:Experience)
+        ORDER BY e.endDate DESC
+        RETURN e
+        `,
+        { userEmail: auth.user.email }
+      );
+      return res.records.map((record) => {
+        const e = record.get("e").properties;
+        return {
+          id: e.id,
+          title: e.title,
+          company: e.company,
+          startDate: e.startDate,
+          endDate: e.endDate ?? null,
+          description: e.description,
+          location: e.location ?? null,
+          bulletPoints: e.bulletPoints ?? [],
+          skills: e.skills ?? [],
+        } as Experience;
+      });
+    });
+
+    return result;
+  } catch (error) {
+    console.error("Neo4j error:", error);
+    throw new Error("Failed to fetch experience from Neo4j");
+  } finally {
+    await session.close();
+  }
 }
 
 export async function saveExperience(experience: Experience[]) {
@@ -57,6 +96,54 @@ export async function saveExperience(experience: Experience[]) {
   } catch (error) {
     console.error("Neo4j error:", error);
     throw new Error("Failed to save experience to Neo4j");
+  } finally {
+    await session.close();
+  }
+}
+
+export async function getSkills(): Promise<Skills> {
+  const auth = await verifyAuthSession();
+  const session = getSession();
+
+  try {
+    const result = await session.executeRead(async (tx) => {
+      const res = await tx.run(
+        `
+        MATCH (u:User {email: $userEmail})-[:HAS_EXPERIENCE]->(e:Experience)-[:USED]->(s:Skill)
+        RETURN s, e.id AS experienceId
+        `,
+        { userEmail: auth.user.email }
+      );
+
+      // Map: skillId -> skill object
+      const skillMap = new Map<string, Skill>();
+
+      for (const record of res.records) {
+        const s = record.get("s").properties;
+        const experienceId = record.get("experienceId");
+
+        const skillId = s.id;
+
+        if (!skillMap.has(skillId)) {
+          skillMap.set(skillId, {
+            title: s.title,
+            description: s.description,
+            category: s.category,
+            level: s.level,
+            sources: [],
+          });
+        }
+
+        skillMap.get(skillId)?.sources.push({ experienceId });
+      }
+
+      return Array.from(skillMap.values());
+    });
+
+    return result;
+  } catch (error) {
+    console.error("Neo4j error:", error);
+    throw new Error("Failed to load skills from Neo4j");
   } finally {
     await session.close();
   }

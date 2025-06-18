@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useToast } from "@/components/ui/ToastContext";
 import { parsePdfToDataUri } from "@/lib/parse-pdf-to-datauri";
 import {
@@ -7,8 +7,8 @@ import {
   handleSaveExperience,
 } from "../lib/actions";
 
-export function useExtractExperience() {
-  const [experience, setExperience] = useState<Experience[]>();
+export function useExtractExperience(exp: Experience[]) {
+  const [experience, setExperience] = useState<Experience[] | undefined>(exp);
   const [isExperienceLoading, setIsExperienceLoading] = useState(false);
   const { addToast } = useToast();
 
@@ -19,7 +19,7 @@ export function useExtractExperience() {
   async function extractExperience(values: {
     userProfile: string;
     userProfilePdf?: FileList;
-  }) {
+  }): Promise<undefined | Experience[]> {
     setIsExperienceLoading(true);
     setExperience(undefined);
 
@@ -49,6 +49,7 @@ export function useExtractExperience() {
 
       setExperience(result.experience);
       addToast("Experience extracted successfully.", "success");
+      return result.experience;
     } catch (error) {
       console.error("Experience Extraction Error:", error);
       addToast("Experience Extraction failed.", "error");

@@ -77,7 +77,10 @@ export function useSkillMap(height: number, width: number, skills?: Skills) {
   };
 
   useEffect(() => {
-    if (!skills) return;
+    if (!skills) {
+      setNodes([]);
+      return;
+    }
 
     const [simulation, categoryNodes] = createSimulation(skills, width, height);
     simulationRef.current = simulation;
