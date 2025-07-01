@@ -15,6 +15,6 @@ helm install neo4j-looplicant-release neo4j/neo4j --namespace neo4j -f neo4j.val
 Setup local port forward:
 
 ```
-kubectl port-forward svc/neo4j-looplicant-release 7474:7474 -n neo4j
+kubectl port-forward svc/neo4j-looplicant-release-admin 7474:7474 -n neo4j
 kubectl port-forward svc/neo4j-looplicant-release 7687:7687 -n neo4j
 ```
