@@ -1,3 +1,17 @@
+<svelte:options
+  customElement={{
+    tag: "lct-card-loader",
+    props: {
+      class: { type: "Object" },
+      children: { type: "Object" },
+      title: { type: "String" },
+      loadingTitle: { type: "String" },
+      isLoading: { type: "Boolean" },
+      icon: { type: "Object" },
+    },
+  }}
+/>
+
 <script lang="ts">
   import { Loader2 } from "lucide-svelte";
   import Card from "./Card.svelte";
@@ -26,7 +40,7 @@
         {#if props.isLoading}
           <Loader2 class="h-7 w-7 text-muted-foreground" />
         {:else}
-          <svelte:component this={props.icon} class="h-7 w-7 text-primary" />
+          <props.icon class="h-7 w-7 text-primary" />
         {/if}
         <CardTitle class="text-muted-foreground ml-2">
           {props.isLoading ? props.loadingTitle : props.title}

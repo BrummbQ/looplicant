@@ -14,7 +14,10 @@
 </script>
 
 <section
-  class={["rounded-lg bg-card text-card-foreground shadow-sm", props.class]}
+  class={[
+    "rounded-lg bg-card text-card-foreground border shadow-sm",
+    props.class,
+  ]}
 >
   {@render props.header?.()}
   {@render props.content?.()}

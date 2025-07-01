@@ -1,1 +1,0 @@
-../../../packages/ui/dist/lct-card.js

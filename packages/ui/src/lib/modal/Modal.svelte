@@ -2,43 +2,22 @@
   import { onMount, onDestroy, type Snippet } from "svelte";
 
   interface ModalProps {
+    id: string;
     isOpen: boolean;
-    x: number;
-    y: number;
     title: string;
+    source: EventTarget;
     onClose?: () => void;
     children: Snippet;
   }
 
-  let { isOpen, x, y, title, onClose, children }: ModalProps = $props();
+  let { id, isOpen, title, source, onClose, children }: ModalProps = $props();
 
   let dialogEl: HTMLDialogElement | null = null;
-  let pos = $state({ left: x, top: y });
 
   // Open/close popover on state change
   $effect(() => {
     if (!dialogEl) return;
-    isOpen ? dialogEl.showPopover() : dialogEl.hidePopover();
-  });
-
-  // Reposition if x/y change
-  $effect(() => {
-    if (!dialogEl) return;
-
-    const { offsetWidth, offsetHeight } = dialogEl;
-
-    let newLeft = x;
-    let newTop = y;
-
-    // Adjust if near edges
-    if (x + offsetWidth > window.innerWidth) {
-      newLeft = window.innerWidth - offsetWidth - 10;
-    }
-    if (y + offsetHeight > window.innerHeight) {
-      newTop = window.innerHeight - offsetHeight - 10;
-    }
-
-    pos = { left: newLeft, top: newTop };
+    isOpen ? dialogEl.showPopover({ source: source }) : dialogEl.hidePopover();
   });
 
   function handleClickOutside(e: MouseEvent) {
@@ -72,10 +51,11 @@
 
 <dialog
   bind:this={dialogEl}
+  {id}
   onkeydown={handleKeyDown}
   class="z-50 rounded-lg p-4 bg-white border shadow-xl text-sm"
+  style="position-area: bottom"
   popover="auto"
-  style={`position: absolute; left: ${pos.left}px; top: ${pos.top}px;`}
 >
   <div class="flex justify-between items-center mb-2">
     <h3 class="text-lg font-semibold text-gray-800">{title}</h3>

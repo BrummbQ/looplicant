@@ -1,3 +1,15 @@
+<svelte:options
+  customElement={{
+    tag: "lct-skill-map",
+    props: {
+      class: { type: "Object" },
+      host: { type: "Object" },
+      userId: { type: "String" },
+      experience: { type: "Object" },
+    },
+  }}
+/>
+
 <script lang="ts">
   import { Bone } from "lucide-svelte";
   import { onMount } from "svelte";
@@ -29,7 +41,9 @@
   onMount(async () => {
     isLoading = true;
     try {
-      const res = await fetch(`/api/skill/${props.userId}`);
+      const res = await fetch(
+        `${import.meta.env.VITE_LOOPLICANT_API_BASE ?? ""}/api/skill/${props.userId}`
+      );
       if (!res.ok) throw new Error("Failed to fetch skill");
       const data = await res.json();
       skills = data;
@@ -72,7 +86,7 @@
           title={n.title}
           onclick={(e) => {
             if (n.type === "category") toggleCategory(n.title, skills);
-            else skillModal = { x: e.clientX, y: e.clientY, data: n };
+            else skillModal = { data: n, source: e.currentTarget };
           }}
         >
           {n.title}

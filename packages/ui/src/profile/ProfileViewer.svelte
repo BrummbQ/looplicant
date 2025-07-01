@@ -25,3 +25,11 @@
 
 <SkillMap class="mb-6" {userId} {experience} host={$host()}></SkillMap>
 <ExperienceTimeline {userId} {experienceLoaded}></ExperienceTimeline>
+
+<style>
+  :host {
+    max-width: 900px;
+    margin: 0 auto;
+    text-align: left;
+  }
+</style>

@@ -12,5 +12,6 @@ export default defineConfig({
         inline: ["next-auth"],
       },
     },
+    exclude: ["e2e/**"],
   },
 });

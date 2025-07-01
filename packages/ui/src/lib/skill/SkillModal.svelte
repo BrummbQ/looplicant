@@ -5,9 +5,8 @@
   import type { Experience } from "@lct/looplicant-types";
 
   export type SkillModalData = {
-    x: number;
-    y: number;
     data: SkillNode;
+    source: EventTarget;
   };
 
   type Props = {
@@ -22,11 +21,11 @@
 
 {#if skillModalData}
   <Modal
+    id="skillPopover"
     isOpen
     onClose={handleClose}
-    x={skillModalData.x}
-    y={skillModalData.y}
     title={skillModalData.data.title}
+    source={skillModalData.source}
   >
     {#if skillModalData.data.skill && experience}
       <SkillModalContent

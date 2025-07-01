@@ -18,7 +18,9 @@
   onMount(async () => {
     isLoading = true;
     try {
-      const res = await fetch(`/api/experience/${userId}`);
+      const res = await fetch(
+        `${import.meta.env.VITE_LOOPLICANT_API_BASE ?? ""}/api/experience/${userId}`
+      );
       if (!res.ok) throw new Error("Failed to fetch experience");
       const data = await res.json();
       experienceLoaded?.(data);

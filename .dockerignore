@@ -1,0 +1,7 @@
+/.next
+/.output
+/node_modules
+
+.gitignore
+.prettierrc
+README.md

@@ -11,8 +11,9 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
+    "test:ci": "vitest run",
     "start:maildev": "maildev",
-    "postinstall": "mkdir -p public && ln -sf ../../../packages/ui/dist/lct-card.js public/lct-card.js"
+    "postbuild": "mkdir -p public && cp ../../packages/ui/dist/lct-card.js public/lct-card.js"
   },
   "dependencies": {
     "@auth/neo4j-adapter": "^2.9.1",
